@@ -4,7 +4,7 @@ export const PIN_PATTERN = new RegExp(`^\\d{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}
 
 const ARGON2ID_PREFIX = "$argon2id$";
 const PBKDF2_PREFIX = "$pbkdf2$";
-const PBKDF2_ITERATIONS = 310_000;
+const PBKDF2_ITERATIONS = 100_000;
 
 export function isValidPinFormat(pin: string): boolean {
   return PIN_PATTERN.test(pin);
