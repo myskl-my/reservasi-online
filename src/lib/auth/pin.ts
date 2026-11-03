@@ -2,7 +2,6 @@ const PIN_MIN_LENGTH = 6;
 const PIN_MAX_LENGTH = 12;
 export const PIN_PATTERN = new RegExp(`^\\d{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}$`);
 
-const ARGON2ID_PREFIX = "$argon2id$";
 const PBKDF2_PREFIX = "$pbkdf2$";
 const PBKDF2_ITERATIONS = 100_000;
 

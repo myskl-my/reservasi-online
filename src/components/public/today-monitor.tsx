@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarDays,
+  RefreshCw,
+  Search,
+  WifiOff,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonClassName } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -27,7 +34,7 @@ const BADGE_TONE: Record<
 };
 
 const BAR_CLASSES: Record<AvailabilityState, string> = {
-  available: "bg-success",
+  available: "bg-gradient-accent",
   almost_full: "bg-warning",
   full: "bg-danger",
   closed: "bg-ink-muted/60",
@@ -60,26 +67,37 @@ export function TodayMonitor({
 
   return (
     <Card className="overflow-hidden">
-      <CardBody className="space-y-7 p-6 sm:p-8">
-        <div className="flex items-start justify-between gap-3">
+      {/* Header gradient: memberi bobot visual pada kartu utama. */}
+      <div className="bg-gradient-accent relative overflow-hidden px-6 py-5 sm:px-8 sm:py-6">
+        <div
+          aria-hidden="true"
+          className="absolute -top-16 -right-12 h-40 w-40 rounded-full bg-white/15 blur-2xl"
+        />
+        <div className="relative flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium tracking-[0.12em] text-ink-muted uppercase">
-              Antrean online hari ini
+            <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.16em] text-white/80 uppercase">
+              <span className="animate-pulse-dot inline-block h-1.5 w-1.5 rounded-full bg-white" />
+              Live · antrean hari ini
             </p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-ink sm:text-[22px]">
+            <h2 className="mt-2 flex items-center gap-2 text-xl font-bold tracking-tight text-white sm:text-[22px]">
+              <CalendarDays aria-hidden="true" className="h-5 w-5" strokeWidth={2.2} />
               {formatDateID(today.date)}
             </h2>
           </div>
-          <Badge tone={BADGE_TONE[state]}>{stateLabel}</Badge>
+          <Badge tone={BADGE_TONE[state]} className="bg-white/95">
+            {stateLabel}
+          </Badge>
         </div>
+      </div>
 
+      <CardBody className="space-y-7 p-6 sm:p-8">
         <div>
-          <div className="flex items-end gap-2">
-            <p className="text-5xl font-semibold leading-none tracking-tight text-ink tabular-nums sm:text-6xl">
+          <div className="flex items-end gap-2.5">
+            <p className="text-6xl font-bold leading-none tracking-tighter text-ink tabular-nums sm:text-7xl">
               {today.booked}
             </p>
-            <p className="pb-1.5 text-sm text-ink-muted">
-              dari {today.quota} kuota
+            <p className="pb-2 text-sm font-medium text-ink-muted">
+              dari <span className="font-bold text-ink">{today.quota}</span> kuota
             </p>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-ink-muted">
@@ -95,8 +113,8 @@ export function TodayMonitor({
 
         <div>
           <div className="flex items-center justify-between text-xs text-ink-muted">
-            <span>Kapasitas terisi</span>
-            <span className="font-semibold text-ink tabular-nums">
+            <span className="font-medium">Kapasitas terisi</span>
+            <span className="font-bold text-ink tabular-nums">
               {usedPercent}%
             </span>
           </div>
@@ -106,11 +124,11 @@ export function TodayMonitor({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={usedPercent}
-            className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted"
+            className="mt-2.5 h-3 overflow-hidden rounded-full bg-surface-muted ring-1 ring-line"
           >
             <div
               className={cn(
-                "h-full rounded-full transition-[width] duration-300",
+                "h-full rounded-full transition-[width] duration-500 ease-out",
                 BAR_CLASSES[state],
               )}
               style={{ width: `${usedPercent}%` }}
@@ -118,44 +136,44 @@ export function TodayMonitor({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Link href="/booking" className={buttonClassName({ className: "w-full" })}>
-            Reservasi
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          <Link
+            href="/booking"
+            className={buttonClassName({ size: "lg", className: "sm:col-span-2" })}
+          >
+            Reservasi Sekarang
+            <ArrowRight aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
           </Link>
           <Link
             href="/booking#tanggal"
-            className={buttonClassName({
-              variant: "secondary",
-              className: "w-full",
-            })}
+            className={buttonClassName({ variant: "secondary", className: "w-full" })}
           >
-            Lihat Tanggal Lain
+            <CalendarDays aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+            Tanggal Lain
           </Link>
           <Link
             href="/booking/status"
-            className={buttonClassName({
-              variant: "secondary",
-              className: "w-full",
-            })}
+            className={buttonClassName({ variant: "secondary", className: "w-full" })}
           >
-            Cek Status Antrean
+            <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.2} />
+            Cek Status
           </Link>
         </div>
 
-        <div className="border-t border-line pt-4 text-center text-xs">
-          {connection === "offline" ? (
-            <span className="text-warning">
-              Data mungkin belum terbaru.{" "}
-              <button
-                type="button"
-                onClick={() => void refresh()}
-                className="font-semibold underline underline-offset-2"
-              >
-                Coba lagi
-              </button>
-            </span>
-          ) : null}
-        </div>
+        {connection === "offline" ? (
+          <div className="flex items-center justify-center gap-2 border-t border-line pt-4 text-xs font-medium text-warning">
+            <WifiOff aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.2} />
+            Data mungkin belum terbaru.
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="inline-flex items-center gap-1 font-semibold underline underline-offset-2"
+            >
+              <RefreshCw aria-hidden="true" className="h-3 w-3" strokeWidth={2.4} />
+              Coba lagi
+            </button>
+          </div>
+        ) : null}
       </CardBody>
     </Card>
   );

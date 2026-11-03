@@ -322,7 +322,7 @@ async function run() {
   check("Admin login sets session cookie", Boolean(adminCookie));
   check(
     "Login response never exposes the PIN hash",
-    !adminLogin.text.includes("$argon2"),
+    !adminLogin.text.includes("$pbkdf2") && !adminLogin.text.includes("$argon2"),
   );
   check(
     "Login response contains no PIN field",
@@ -763,10 +763,10 @@ async function run() {
 
     const pinHashes = db.prepare("SELECT pin_hash AS hash FROM users").all();
     check(
-      "Admin PIN is stored as an Argon2id hash",
+      "Admin PIN is stored as a PBKDF2 hash",
       pinHashes.length === 1 &&
         typeof pinHashes[0].hash === "string" &&
-        pinHashes[0].hash.startsWith("$argon2id$"),
+        pinHashes[0].hash.startsWith("$pbkdf2$"),
     );
     check(
       "Plain PIN is never stored in the users table",
@@ -779,7 +779,7 @@ async function run() {
   checkPage(
     "Home page renders",
     await fetchPage("/"),
-    "Antrean online hari ini",
+    "RESERVASI",
   );
   checkPage("Booking page renders", await fetchPage("/booking"), "Pilih tanggal");
   checkPage(
@@ -877,7 +877,7 @@ async function run() {
     method: "POST",
     body: { pin: WRONG_PIN },
   });
-  checkStatus("Wrong PIN attempt 3 locks the login", wrongPin3, 429);
+  checkStatus("Wrong PIN attempt 3 locks the source", wrongPin3, 429);
   check(
     "Lock message is clear and generic",
     wrongPin3.json?.error?.message ===
@@ -885,53 +885,117 @@ async function run() {
     formatDetail(wrongPin3),
   );
 
-  const lockedRow = readLoginState().find((row) => row.scope === "global");
-  const lockMinutes = lockedRow?.locked_until
-    ? (new Date(lockedRow.locked_until).getTime() - Date.now()) / 60000
+  const sourceLockedRow = readLoginState().find((row) =>
+    row.scope.startsWith("source:"),
+  );
+  const sourceLockMinutes = sourceLockedRow?.locked_until
+    ? (new Date(sourceLockedRow.locked_until).getTime() - Date.now()) / 60000
     : 0;
   check(
-    "Global lock lasts about 15 minutes",
-    lockMinutes > 14 && lockMinutes <= 15.5,
-    `minutes=${lockMinutes}`,
+    "Source lock lasts about 15 minutes",
+    sourceLockMinutes > 14 && sourceLockMinutes <= 15.5,
+    `minutes=${sourceLockMinutes}`,
+  );
+  const globalAfterSource = readLoginState().find(
+    (row) => row.scope === "global",
   );
   check(
-    "Request source is rate limited as well",
-    readLoginState().some(
-      (row) => row.scope.startsWith("source:") && Boolean(row.locked_until),
-    ),
+    "Global lock is not triggered by a single source (anti-DoS)",
+    !globalAfterSource?.locked_until,
+    formatDetail({ json: globalAfterSource }),
   );
 
-  const correctDuringLock = await api("/api/auth/login", {
+  const correctDuringSourceLock = await api("/api/auth/login", {
     method: "POST",
     body: { pin: ADMIN.pin },
   });
-  checkStatus("Correct PIN during the lock is rejected", correctDuringLock, 429);
-  check("Rejected lock attempt sets no session cookie", !correctDuringLock.cookie);
+  checkStatus(
+    "Correct PIN from locked source is rejected",
+    correctDuringSourceLock,
+    429,
+  );
+  check(
+    "Rejected lock attempt sets no session cookie",
+    !correctDuringSourceLock.cookie,
+  );
+
+  // Sumber baru tetap bisa login selama belum mencapai ambang global —
+  // ini yang mencegah satu pihak mengunci admin sepenuhnya (DoS login).
+  const correctFromNewSource = await api("/api/auth/login", {
+    method: "POST",
+    headers: {
+      "x-forwarded-for": "203.0.113.7",
+    },
+    body: { pin: ADMIN.pin },
+  });
+  checkStatus(
+    "Correct PIN from a new source still works before global lock",
+    correctFromNewSource,
+    200,
+  );
+  const newSourceCookie = correctFromNewSource.cookie;
+  check("New-source login sets a session cookie", Boolean(newSourceCookie));
+
+  const logoutNewSource = await api("/api/auth/logout", {
+    method: "POST",
+    cookie: newSourceCookie,
+  });
+  checkStatus("Logout from new source succeeds", logoutNewSource, 200);
+
+  // Naikkan hitungan global ke ambang dengan beberapa sumber berbeda.
+  clearLoginState();
+  for (let index = 0; index < 10; index += 1) {
+    const attempt = await api("/api/auth/login", {
+      method: "POST",
+      headers: { "x-forwarded-for": `198.51.100.${index + 1}` },
+      body: { pin: WRONG_PIN },
+    });
+    if (attempt.status !== 401 && attempt.status !== 429) {
+      check(
+        "Global threshold attempt stays in 401/429 range",
+        false,
+        `status=${attempt.status}`,
+      );
+      break;
+    }
+  }
+  const globalLockedRow = readLoginState().find(
+    (row) => row.scope === "global",
+  );
+  const globalLockMinutes = globalLockedRow?.locked_until
+    ? (new Date(globalLockedRow.locked_until).getTime() - Date.now()) / 60000
+    : 0;
+  check(
+    "Global lock engages after enough failures from multiple sources",
+    globalLockMinutes > 14 && globalLockMinutes <= 15.5,
+    `minutes=${globalLockMinutes}`,
+  );
 
   const cookieSwap = await api("/api/auth/login", {
     method: "POST",
     headers: {
       cookie: `cq_session=${"a".repeat(64)}`,
-      "x-forwarded-for": "203.0.113.7",
+      "x-forwarded-for": "203.0.113.99",
     },
     body: { pin: ADMIN.pin },
   });
-  checkStatus("New browser, cookie, and IP cannot bypass the lock", cookieSwap, 429);
+  checkStatus("Global lock blocks every source", cookieSwap, 429);
 
   await restartServer();
   const afterRestart = await api("/api/auth/login", {
     method: "POST",
+    headers: { "x-forwarded-for": "203.0.113.50" },
     body: { pin: ADMIN.pin },
   });
   checkStatus("Lock still applies after a server restart", afterRestart, 429);
 
-  // Concurrent failures must not exceed the verification budget.
+  // Concurrent failures must not exceed the global verification budget.
   clearLoginState();
   const concurrentAttempts = await Promise.all(
-    Array.from({ length: 8 }, (_, index) =>
+    Array.from({ length: 15 }, (_, index) =>
       api("/api/auth/login", {
         method: "POST",
-        headers: { "x-forwarded-for": `198.51.100.${index + 1}` },
+        headers: { "x-forwarded-for": `192.0.2.${index + 1}` },
         body: { pin: WRONG_PIN },
       }),
     ),
@@ -943,12 +1007,13 @@ async function run() {
     (attempt) => attempt.status === 429,
   ).length;
   check(
-    "Concurrent requests verify at most three PINs",
-    verifiedFailures <= 2 && verifiedFailures + lockedAttempts === 8,
+    "Concurrent requests verify at most the global budget",
+    verifiedFailures <= 10 && verifiedFailures + lockedAttempts === 15,
     `401=${verifiedFailures} 429=${lockedAttempts}`,
   );
   const concurrentCorrect = await api("/api/auth/login", {
     method: "POST",
+    headers: { "x-forwarded-for": "192.0.2.200" },
     body: { pin: ADMIN.pin },
   });
   checkStatus(

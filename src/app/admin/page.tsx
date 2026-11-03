@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
-import { Badge, StatusBadge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/badge";
 import { buttonClassName } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader, StatCard } from "@/components/ui/layout";
@@ -106,9 +106,9 @@ export default async function AdminDashboardPage() {
             title="Layanan berlangsung"
             description="Reservasi online dan walk-in yang sedang dipanggil atau dilayani."
             actions={
-            <Badge tone="blue">
+            <span className="text-sm font-semibold text-info">
               {data.currentServices.length} layanan aktif
-            </Badge>
+            </span>
           }
         />
           <CardBody className="p-0">
@@ -131,9 +131,14 @@ export default async function AdminDashboardPage() {
                         <p className="text-sm font-semibold text-ink">
                           {item.customerName}
                         </p>
-                        <Badge tone={item.kind === "ONLINE" ? "blue" : "amber"}>
+                        <span
+                          className={cn(
+                            "text-xs font-semibold",
+                            item.kind === "ONLINE" ? "text-info" : "text-warning",
+                          )}
+                        >
                           {item.kind === "ONLINE" ? "Online" : "Walk-in"}
-                        </Badge>
+                        </span>
                         <StatusBadge status={item.status as ReservationStatus} />
                       </div>
                       <p className="mt-1 text-xs text-ink-muted">

@@ -1,7 +1,8 @@
+import { ShieldCheck, Scissors } from "lucide-react";
 import { requireAdminPage } from "@/lib/auth/guards";
 import { AdminNav } from "@/components/internal/admin-nav";
 import { LogoutButton } from "@/components/auth/logout-button";
-import { Badge } from "@/components/ui/badge";
+
 
 export default async function AdminLayout({
   children,
@@ -9,24 +10,26 @@ export default async function AdminLayout({
   const user = await requireAdminPage();
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <header className="border-b border-line bg-surface">
+    <div className="page-glow min-h-screen bg-canvas">
+      <header className="sticky top-0 z-40 border-b border-line/80 bg-surface/85 backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-accent text-xs font-bold tracking-wide text-white">
-              CQ
+            <span className="bg-gradient-accent flex h-10 w-10 shrink-0 items-center justify-center rounded-control shadow-glow-accent">
+              <Scissors aria-hidden="true" className="h-5 w-5 text-white" strokeWidth={2.2} />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight text-ink">
-                Reservasi online Admin
+              <p className="truncate text-sm font-bold leading-tight tracking-tight text-ink">
+                Reservasi online
+                <span className="ml-1.5 text-accent-strong">Admin</span>
               </p>
               <p className="truncate text-xs text-ink-muted">
                 {user.name} · {user.email}
               </p>
             </div>
-            <Badge tone="green" className="hidden sm:inline-flex">
+            <span className="hidden items-center gap-1 text-xs font-semibold text-success sm:inline-flex">
+              <ShieldCheck aria-hidden="true" className="h-3 w-3" strokeWidth={2.6} />
               Admin
-            </Badge>
+            </span>
           </div>
           <LogoutButton />
         </div>

@@ -3,7 +3,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = process.cwd();
-const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "cutqueue.db");
+const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "reservasi-online.db");
 
 for (const suffix of ["", "-wal", "-shm"]) {
   const file = dbPath + suffix;

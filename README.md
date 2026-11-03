@@ -32,11 +32,11 @@ Antarmuka menggunakan Bahasa Indonesia dan seluruh tanggal operasional mengikuti
 | UI | React 19.2.0, Tailwind CSS 4.3.3 |
 | Bahasa | TypeScript 5.9 |
 | Validasi | Zod 4.3.3 |
-| Database | SQLite lokal via `node:sqlite` |
-| Autentikasi | PIN admin Argon2id (`@node-rs/argon2`) + cookie sesi server |
+| Database | SQLite lokal via `node:sqlite`; Cloudflare D1 (opsional) via adapter `DbClient` |
+| Autentikasi | PIN admin PBKDF2-SHA256 (Web Crypto) + cookie sesi server |
 | Pengujian | Node.js test runner + skrip integrasi HTTP |
 
-Cloudflare belum dikonfigurasi. Aplikasi saat ini berjalan sebagai aplikasi Node.js dengan database SQLite lokal.
+Mode default adalah Node.js dengan database SQLite lokal. Deploy ke Cloudflare (Workers/Pages + D1) sudah dikonfigurasi via OpenNext/wrangler; konteks D1 hanya aktif bila `OPENNEXT_CLOUDFLARE_DEV=1` (dev) atau saat berjalan di Worker produksi.
 
 ## Menjalankan Secara Lokal
 
@@ -84,9 +84,10 @@ Tidak ada pendaftaran akun melalui halaman publik. Capster tidak memiliki akun, 
 ## Autentikasi dan Penguncian Login
 
 - Login admin memakai PIN 6–12 digit. Verifikasi PIN hanya terjadi di server; browser tidak pernah menerima PIN asli maupun hash-nya.
-- PIN disimpan sebagai hash Argon2id (19 MiB, 2 iterasi, salt acak).
-- Maksimal 3 percobaan PIN salah per periode. Percobaan ketiga yang gagal mengunci login selama 15 menit, dan PIN yang benar tetap ditolak selama penguncian berlangsung.
-- Penghitung percobaan disimpan di tabel `admin_login_state` pada database SQLite, bukan di memori server atau penyimpanan browser. Penguncian global dan rate limit per sumber permintaan membuat penggantian cookie, browser, atau sesi baru tidak melewati batas.
+- PIN disimpan sebagai hash PBKDF2-SHA256 (100.000 iterasi, salt acak 16 byte, Web Crypto) — format `$pbkdf2$…`, kompatibel Node.js maupun Cloudflare Workers.
+- Maksimal 3 percobaan PIN salah per sumber permintaan (IP). Percobaan ketiga yang gagal mengunci sumber tersebut selama 15 menit.
+- Penguncian **global** (seluruh admin) memakai ambang lebih tinggi (10 percobaan) agar pihak yang salah PIN tidak mudah mengunci login admin sepenuhnya (anti-DoS login).
+- Penghitung percobaan disimpan di tabel `admin_login_state` pada database, bukan di memori server atau penyimpanan browser. Penguncian bertahan setelah restart server.
 - Login yang berhasil mereset penghitung. Setelah 15 menit, percobaan baru dimulai dengan penghitung baru.
 - Sesi memakai cookie `cq_session` (HttpOnly, SameSite=Lax, Secure pada HTTPS/produksi), berlaku 12 jam, dan dirotasi setiap login. Logout menghapus sesi di server.
 - Halaman dan API admin selalu memeriksa sesi di server; status login di frontend bukan kontrol akses.
@@ -205,7 +206,16 @@ Untuk saat ini aplikasi memerlukan host Node.js dengan penyimpanan persisten, mi
 4. Jangan menjalankan lebih dari satu instance aplikasi terhadap file SQLite yang sama tanpa strategi locking yang memadai.
 5. Letakkan aplikasi di belakang proxy tepercaya yang menimpa `X-Forwarded-For`, dan atur PIN admin lewat `npm run admin:pin` bila akun admin sudah ada sebelum migrasi PIN.
 
-Cloudflare (Workers/Pages + D1) belum disiapkan. Diperlukan adapter database D1, OpenNext/wrangler, dan penyesuaian akses `node:sqlite`. Rincian rencana ada di `IMPLEMENTATION.md`.
+Cloudflare (Pages + D1) sudah dikonfigurasi via OpenNext/wrangler (`wrangler.toml`, `wrangler.jsonc`, `open-next.config.ts`). Target deploy adalah **Cloudflare Pages** project `reservasionline`:
+
+- `npm run deploy` — build OpenNext, merakit `pages-output`, lalu upload ke Pages. Ini perintah deploy utama.
+- `npm run cf:build` — hanya build OpenNext ke `.open-next`.
+- `npm run cf:pages` — hanya merakit `pages-output` dari hasil build.
+- `npm run cf:deploy` — upload `pages-output` ke Pages (tanpa build).
+- `npm run cf:migrate` — terapkan migrasi ke D1 remote (`db/migrations`).
+- `OPENNEXT_CLOUDFLARE_DEV=1 npm run dev` mengaktifkan konteks D1 lokal bila diperlukan; default `npm run dev` tetap memakai SQLite.
+
+Catatan teknis: npm scripts memanggil `node node_modules/...` secara langsung (bukan shim `.bin`) karena path project mengandung karakter `&` yang memecah shell Windows. `pages-output` bersifat generated (di-ignore git).
 
 ## Asumsi dan Batasan
 

@@ -8,5 +8,6 @@ compatibility_flags = [ "nodejs_compat" ]
 database_id = "14aae4ed-cc38-4949-8b63-c995a83a25ae"
 binding = "DB"
 database_name = "DB"
+migrations_dir = "db/migrations"
 
 [env.production]

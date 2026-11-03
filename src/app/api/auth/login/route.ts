@@ -41,11 +41,13 @@ export async function POST(request: Request): Promise<Response> {
       await recordLoginFailure(GLOBAL_LOGIN_SCOPE);
       await recordLoginFailure(sourceScope);
 
+      // Sisa percobaan dihitung dari cakupan sumber (bukan global) agar
+      // pesan tetap akurat dan penguncian global tidak mengunci lebih awal.
       const remaining = Math.max(
         0,
-        MAX_LOGIN_ATTEMPTS - globalAttempt.attemptNumber,
+        MAX_LOGIN_ATTEMPTS - sourceAttempt.attemptNumber,
       );
-      if (remaining === 0) throw loginLockedError();
+      if (remaining === 0 || !sourceAttempt.allowed) throw loginLockedError();
 
       throw new ApiError(
         401,

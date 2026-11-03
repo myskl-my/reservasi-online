@@ -75,8 +75,7 @@ export default async function AdminSettingsPage() {
           <CardBody className="space-y-4 text-sm leading-relaxed text-ink-muted">
             <div className="flex items-start gap-2.5">
               <span className={cn(
-                "shrink-0 inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-                "bg-accent-soft text-accent-strong border border-accent/20"
+"shrink-0 w-24 pt-0.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
               )}>
                 Kuota
               </span>
@@ -88,8 +87,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-start gap-2.5">
               <span className={cn(
-                "shrink-0 inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-                "bg-accent-soft text-accent-strong border border-accent/20"
+"shrink-0 w-24 pt-0.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
               )}>
                 Tanggal
               </span>
@@ -101,8 +99,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-start gap-2.5">
               <span className={cn(
-                "shrink-0 inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-                "bg-accent-soft text-accent-strong border border-accent/20"
+"shrink-0 w-24 pt-0.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
               )}>
                 Penutupan
               </span>
@@ -114,8 +111,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-start gap-2.5">
               <span className={cn(
-                "shrink-0 inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-                "bg-accent-soft text-accent-strong border border-accent/20"
+"shrink-0 w-24 pt-0.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
               )}>
                 Walk-in
               </span>
@@ -126,8 +122,7 @@ export default async function AdminSettingsPage() {
             </div>
             <div className="flex items-start gap-2.5">
               <span className={cn(
-                "shrink-0 inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-                "bg-accent-soft text-accent-strong border border-accent/20"
+"shrink-0 w-24 pt-0.5 text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
               )}>
                 Horizon
               </span>
@@ -146,8 +141,7 @@ export default async function AdminSettingsPage() {
           description={`${availability.days.length} hari ke depan · ${totalOverride} kuota khusus · ${totalClosed} tanggal ditutup`}
           actions={
             <span className={cn(
-              "inline-flex items-center justify-center rounded-control px-2 py-1 text-[10px] font-semibold tracking-[0.08em] uppercase",
-              "bg-accent-soft text-accent-strong border border-accent/20"
+"text-[10px] font-bold tracking-[0.08em] uppercase text-accent-strong"
             )}>
               Zona Asia/Jakarta
             </span>

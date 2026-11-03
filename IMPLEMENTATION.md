@@ -21,7 +21,7 @@ Halaman publik dan admin semuanya dinamis (`force-dynamic`) karena data operasio
 1. **Database lokal dahulu.** Cloudflare ditunda sesuai kebutuhan. SQLite memberi pengembangan tanpa layanan eksternal dan tanpa dependensi native.
 2. **Adapter async.** Walaupun `node:sqlite` sinkron, seluruh pemanggilan dibungkus Promise agar penggantian ke D1 tidak mengubah lapisan data.
 3. **Tanpa ORM.** Query SQL eksplisit agar constraint, transaksi, dan guard kuota/antrean mudah dibaca dan diuji.
-4. **Autentikasi sendiri.** Login admin memakai PIN yang di-hash Argon2id di server; sesi disimpan sebagai hash token di database dan cookie HttpOnly. Penghitung percobaan login disimpan di database agar tahan restart dan aman terhadap permintaan bersamaan.
+4. **Autentikasi sendiri.** Login admin memakai PIN yang di-hash PBKDF2-SHA256 di server; sesi disimpan sebagai hash token di database dan cookie HttpOnly. Penghitung percobaan login disimpan di database agar tahan restart dan aman terhadap permintaan bersamaan.
 5. **Satu tanggal, bukan slot jam.** Karena belum ada durasi layanan atau jadwal per capster, reservasi hanya memilih tanggal dan antrean diproses berurutan.
 6. **Status eksplisit.** `CHECKED_IN` tidak dipakai; check-in langsung mengubah `CONFIRMED` menjadi `WAITING`.
 7. **Guard di SQL.** Transisi status, kuota, dan satu pelanggan aktif per capster dijaga dengan kondisi `UPDATE ... WHERE` agar aman terhadap perubahan bersamaan.
@@ -33,7 +33,7 @@ Migrasi: `db/migrations/0001_init.sql`, `db/migrations/0002_admin_only_capsters.
 
 | Tabel | Isi penting |
 | --- | --- |
-| `users` | Hanya akun `ADMIN`, email unik case-insensitive, hash PIN Argon2id, status aktif |
+| `users` | Hanya akun `ADMIN`, email unik case-insensitive, hash PIN PBKDF2, status aktif |
 | `sessions` | Hash token sesi admin, waktu kedaluwarsa |
 | `admin_login_state` | Penghitung percobaan, penguncian 15 menit, dan rate limit per sumber login |
 | `reservations` | Reservasi online, kode booking unik, nomor antrean per tanggal |
@@ -131,17 +131,19 @@ Walk-in dibuat admin dan langsung berstatus `WAITING`. Walk-in tidak memiliki st
 ### PIN admin
 
 - PIN 6–12 digit; format divalidasi Zod di server.
-- Hash Argon2id (`@node-rs/argon2`): memori 19 MiB, 2 iterasi, 1 lane, output 32 byte, salt acak dari pustaka.
-- Format tersimpan berupa string PHC `$argon2id$v=19$m=19456,t=2,p=1$...`.
+- Hash PBKDF2-SHA256 (Web Crypto): 100.000 iterasi, salt acak 16 byte, output 32 byte.
+- Format tersimpan berupa string `$pbkdf2$100000$<salt-base64>$<hash-base64>` — identik di aplikasi web (`src/lib/auth/pin.ts`) dan skrip CLI (`scripts/lib/pin-hash.mjs`).
+- PBKDF2 dipilih agar berjalan di Node.js maupun Cloudflare Workers tanpa modul native.
 - Verifikasi hanya di server; PIN asli dan hash-nya tidak pernah dikirim ke browser.
 - `password_hash` lama dipertahankan demi integritas data, tetapi tidak lagi dipakai oleh alur login.
 
 ### Pembatasan percobaan login
 
 - Tabel `admin_login_state` menyimpan `attempt_count`, `locked_until`, dan `updated_at` per `scope`.
-- Dua cakupan: `global` (seluruh endpoint login) dan `source:<sha256-ip>` (rate limit per sumber).
-- Setiap permintaan memesan slot lewat satu statement `INSERT ... ON CONFLICT ... RETURNING` yang atomik sebelum PIN diverifikasi, sehingga permintaan bersamaan tidak dapat melewati batas 3 percobaan.
-- Percobaan gagal ketiga memasang `locked_until = now + 15 menit`. Selama terkunci, reservasi tidak menghasilkan baris sehingga PIN yang benar pun ditolak.
+- Dua cakupan: `global` (seluruh endpoint login) dan `source:<hash-ip>` (rate limit per sumber).
+- Ambang terpisah: **3 percobaan per sumber** (mengunci sumber itu 15 menit) dan **10 percobaan global** (mengunci seluruh login 15 menit) — ambang global yang lebih tinggi mencegah satu pihak mengunci admin sepenuhnya (anti-DoS login) sementara tetap membatasi brute-force tersebar.
+- Setiap permintaan memesan slot lewat satu statement `INSERT ... ON CONFLICT ... RETURNING` yang atomik sebelum PIN diverifikasi, sehingga permintaan bersamaan tidak dapat melewati batas.
+- Saat hitungan mencapai ambang, `locked_until = now + 15 menit` dipasang. Selama terkunci, UPSERT tidak menghasilkan baris sehingga PIN yang benar pun ditolak pada cakupan tersebut.
 - Setelah 15 menit, UPSERT memulai periode baru dengan hitungan 1.
 - Login berhasil mereset seluruh penghitung dan penguncian.
 - Respons terkunci: HTTP 429 `LOGIN_LOCKED` dengan pesan "Terlalu banyak percobaan. Silakan coba lagi dalam 15 menit." Pesan tidak mengungkap PIN, hash, atau detail internal.
@@ -286,11 +288,11 @@ Uji integrasi menjalankan server sendiri dengan database sementara dan mencakup:
 - Prioritas walk-in dan larangan non-handler.
 - Tidak ada pembatasan jumlah pelanggan aktif.
 - Kuota khusus, penutupan tanggal, dan penurunan kuota.
-- Hash sesi, hash PIN Argon2id, satu akun admin, dan ketiadaan token/PIN mentah di database.
+- Hash sesi, hash PIN PBKDF2, satu akun admin, dan ketiadaan token/PIN mentah di database.
 - Tidak ada tabel `barbers`, route barber, atau route capster.
 - Render seluruh halaman admin dan publik serta redirect login.
 
-Database uji `data/cutqueue-integration.db` dihapus setelah lulus; jika gagal, file disimpan untuk investigasi.
+Database uji `data/reservasi-online-integration.db` dihapus setelah lulus; jika gagal, file disimpan untuk investigasi.
 
 ## 9. Batasan yang Diketahui
 

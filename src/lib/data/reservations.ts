@@ -287,9 +287,11 @@ export async function listReservationsForAdmin(filters: {
   }
 
   if (filters.query) {
-    const like = `%${filters.query}%`;
+    // Escape wildcard LIKE agar input pengguna tidak melebarkan pencarian.
+    const escaped = filters.query.replace(/[\\%_]/g, "\\$&");
+    const like = `%${escaped}%`;
     conditions.push(
-      "(r.customer_name LIKE ? OR r.customer_phone LIKE ? OR r.booking_code LIKE ?)",
+      "(r.customer_name LIKE ? ESCAPE '\\' OR r.customer_phone LIKE ? ESCAPE '\\' OR r.booking_code LIKE ? ESCAPE '\\')",
     );
     params.push(like, like, like);
   }

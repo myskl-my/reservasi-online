@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { KeyRound, LogIn } from "lucide-react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -38,9 +39,13 @@ export function LoginForm() {
   }
 
   return (
-    <Card>
+    <Card accent>
       <CardBody className="space-y-5 p-6 sm:p-7">
-        {error ? <Alert tone="error">{error}</Alert> : null}
+        {error ? (
+          <Alert tone="error" title="Gagal masuk">
+            {error}
+          </Alert>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field
@@ -48,26 +53,40 @@ export function LoginForm() {
             htmlFor="login-pin"
             hint="6–12 digit angka."
           >
-            <Input
-              id="login-pin"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              autoComplete="current-password"
-              minLength={6}
-              maxLength={12}
-              value={pin}
-              onChange={(event) =>
-                setPin(event.target.value.replace(/\D/g, "").slice(0, 12))
-              }
-              placeholder="••••••"
-              className="text-center font-mono text-lg tracking-[0.35em]"
-              required
-              autoFocus
-            />
+            <div className="relative">
+              <KeyRound
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-muted"
+                strokeWidth={2.2}
+              />
+              <Input
+                id="login-pin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="current-password"
+                minLength={6}
+                maxLength={12}
+                value={pin}
+                onChange={(event) =>
+                  setPin(event.target.value.replace(/\D/g, "").slice(0, 12))
+                }
+                placeholder="••••••"
+                className="pl-9 text-center font-mono text-lg tracking-[0.35em]"
+                required
+                autoFocus
+              />
+            </div>
           </Field>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Memeriksa PIN..." : "Masuk"}
+          <Button type="submit" className="w-full" disabled={loading} size="lg">
+            {loading ? (
+              "Memeriksa PIN..."
+            ) : (
+              <>
+                <LogIn aria-hidden="true" className="h-4 w-4" strokeWidth={2.4} />
+                Masuk
+              </>
+            )}
           </Button>
         </form>
 
@@ -75,7 +94,7 @@ export function LoginForm() {
           Hanya admin yang memiliki akses. Tidak ada pendaftaran publik.{" "}
           <Link
             href="/"
-            className="font-medium text-ink underline underline-offset-4"
+            className="font-semibold text-accent-strong underline underline-offset-4"
           >
             Kembali
           </Link>

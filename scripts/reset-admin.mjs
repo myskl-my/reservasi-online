@@ -4,7 +4,7 @@ import readline from "node:readline";
 import { DatabaseSync } from "node:sqlite";
 
 const root = process.cwd();
-const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "cutqueue.db");
+const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "reservasi-online.db");
 
 function fail(message) {
   console.error(`Gagal: ${message}`);

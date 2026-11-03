@@ -14,19 +14,12 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import { DatabaseSync } from "node:sqlite";
-import { hash } from "@node-rs/argon2";
+import { hashPin } from "./lib/pin-hash.mjs";
 
 const PIN_PATTERN = /^\d{6,12}$/;
-const ARGON2_OPTIONS = {
-  algorithm: 2, // Algorithm.Argon2id
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-  outputLen: 32,
-};
 
 const root = process.cwd();
-const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "cutqueue.db");
+const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "reservasi-online.db");
 
 function parseArgs(argv) {
   const args = { email: null, resetLock: false, status: false };
@@ -178,7 +171,7 @@ async function main() {
       fail("PIN harus 6-12 digit angka.");
     }
 
-    const pinHash = await hash(pin, ARGON2_OPTIONS);
+    const pinHash = await hashPin(pin);
     const now = new Date().toISOString();
     const result = db
       .prepare(

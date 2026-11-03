@@ -2,42 +2,116 @@
 
 /*
  * Reservasi online design tokens.
- * Palet cerah tapi low-contrast, hangat dan menyenangkan.
+ * Gaya modern & berani: teal kaya, gradient, bayangan berlapis.
  * Semua komponen memakai token ini agar warna, radius, dan bayangan konsisten.
  */
 @theme {
-  --color-canvas: #faf9f6;
+  --color-canvas: #f4f2ed;
   --color-surface: #ffffff;
   --color-surface-muted: #f1efe9;
-  --color-ink: #1e1d1b;
-  --color-ink-muted: #6b6862;
-  --color-line: #e8e4dc;
+  --color-ink: #171614;
+  --color-ink-muted: #5f5c55;
+  --color-line: #e5e1d8;
 
-  --color-accent: #4a9c8e;
-  --color-accent-strong: #3a8276;
-  --color-accent-soft: #e6f3f0;
+  --color-accent: #2f9e8c;
+  --color-accent-strong: #1f7f6f;
+  --color-accent-deep: #146255;
+  --color-accent-soft: #e2f4f0;
 
-  --color-success: #3db47a;
-  --color-success-soft: #e6f7ed;
-  --color-warning: #e6a53a;
-  --color-warning-soft: #fef3e2;
-  --color-danger: #e86c63;
-  --color-danger-soft: #fdeaea;
-  --color-info: #4aa3cc;
-  --color-info-soft: #e6f2fa;
-  --color-plum: #b36ec7;
-  --color-plum-soft: #f5e9f8;
+  --color-success: #22a86a;
+  --color-success-soft: #e3f7ec;
+  --color-warning: #dd9420;
+  --color-warning-soft: #fdf2de;
+  --color-danger: #e0574d;
+  --color-danger-soft: #fdeae8;
+  --color-info: #2f8fc4;
+  --color-info-soft: #e4f2fb;
+  --color-plum: #a55bbd;
+  --color-plum-soft: #f6e9fa;
 
-  --radius-card: 0.875rem;
-  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
 
   --shadow-card:
-    0 1px 2px rgba(30, 29, 27, 0.04),
-    0 6px 20px -18px rgba(30, 29, 27, 0.25);
+    0 1px 2px rgba(23, 22, 20, 0.05),
+    0 8px 24px -16px rgba(23, 22, 20, 0.28);
+  --shadow-float:
+    0 2px 4px rgba(23, 22, 20, 0.06),
+    0 18px 40px -22px rgba(23, 22, 20, 0.35);
+  --shadow-glow-accent:
+    0 1px 2px rgba(20, 98, 85, 0.25),
+    0 10px 26px -12px rgba(47, 158, 140, 0.55);
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --animate-fade-in-up: fade-in-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.3s ease both;
+  --animate-pop: pop 0.45s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-slide-in-right: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 168, 106, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 168, 106, 0);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 :root {
@@ -54,6 +128,55 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/*
+ * Latar halaman publik: dua radial gradient lembut agar kartu terasa
+ * "mengapung", bukan menempel pada kanvas datar.
+ */
+.page-glow {
+  background-image:
+    radial-gradient(
+      900px 420px at 12% -8%,
+      rgba(47, 158, 140, 0.16),
+      transparent 62%
+    ),
+    radial-gradient(
+      760px 380px at 92% 4%,
+      rgba(47, 143, 196, 0.12),
+      transparent 60%
+    );
+}
+
+.text-gradient-accent {
+  background-image: linear-gradient(
+    120deg,
+    var(--color-accent-deep),
+    var(--color-accent) 55%,
+    var(--color-info)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-gradient-accent {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-accent) 0%,
+    var(--color-accent-strong) 55%,
+    var(--color-accent-deep) 100%
+  );
+}
+
+.skeleton {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-muted) 25%,
+    #e9e6de 37%,
+    var(--color-surface-muted) 63%
+  );
+  background-size: 200% 100%;
 }
 
 button,

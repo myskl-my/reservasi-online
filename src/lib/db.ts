@@ -20,6 +20,22 @@ interface DbGlobal {
   __reservasiOnlineDb?: DbClient;
 }
 
+interface D1PreparedStatement {
+  bind(...params: unknown[]): D1PreparedStatement;
+  all<T>(): Promise<{ results?: T[] }>;
+  first<T>(): Promise<T | null>;
+  run(): Promise<{ meta?: { changes?: number } }>;
+}
+
+interface D1DatabaseLike {
+  prepare(sql: string): D1PreparedStatement;
+  batch(statements: D1PreparedStatement[]): Promise<unknown>;
+}
+
+interface CloudflareEnvLike {
+  DB?: D1DatabaseLike;
+}
+
 class SqliteDbClient implements DbClient {
   private raw: DatabaseSync;
 
@@ -67,16 +83,16 @@ class SqliteDbClient implements DbClient {
 }
 
 class D1DbClient implements DbClient {
-  constructor(private binding: any) {}
+  constructor(private binding: D1DatabaseLike) {}
 
   async all<T>(sql: string, ...params: SqlValue[]): Promise<T[]> {
-    const result = await this.binding.prepare(sql).bind(...params).all();
-    return (result?.results ?? []) as T[];
+    const result = await this.binding.prepare(sql).bind(...params).all<T>();
+    return result?.results ?? [];
   }
 
   async get<T>(sql: string, ...params: SqlValue[]): Promise<T | null> {
-    const result = await this.binding.prepare(sql).bind(...params).first();
-    return (result as T | undefined) ?? null;
+    const result = await this.binding.prepare(sql).bind(...params).first<T>();
+    return result ?? null;
   }
 
   async run(sql: string, ...params: SqlValue[]): Promise<{ changes: number }> {
@@ -93,14 +109,20 @@ class D1DbClient implements DbClient {
 }
 
 async function openDatabase(): Promise<DbClient> {
-  try {
-    const cloudflare = await import("@opennextjs/cloudflare");
-    const context = cloudflare.getCloudflareContext?.();
-    if ((context?.env as any)?.DB) {
-      return new D1DbClient((context.env as any).DB);
+  // Path SQLite eksplisit selalu menang (integration test, skrip admin, dsb.)
+  // agar konteks D1/miniflare tidak membajak koneksi database lokal.
+  const explicitPath = process.env.RESERVASI_ONLINE_DB_PATH;
+  if (!explicitPath) {
+    try {
+      const cloudflare = await import("@opennextjs/cloudflare");
+      const context = cloudflare.getCloudflareContext?.();
+      const env = context?.env as CloudflareEnvLike | undefined;
+      if (env?.DB) {
+        return new D1DbClient(env.DB);
+      }
+    } catch {
+      // Local Node.js runtime or Cloudflare context unavailable.
     }
-  } catch {
-    // Local Node.js runtime or Cloudflare context unavailable.
   }
 
   const target = globalThis as typeof globalThis & DbGlobal;

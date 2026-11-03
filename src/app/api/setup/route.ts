@@ -1,6 +1,7 @@
 import { constantTimeEqualText } from "@/lib/auth/password";
 import { adminExists, createFirstAdmin } from "@/lib/data/users";
 import { ApiError, assertSameOrigin, conflict, ok, readJson, runApi } from "@/lib/http";
+import { enforceRateLimit } from "@/lib/http-rate-limit";
 import { setupSchema } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<Response> {
   return runApi(async () => {
+    enforceRateLimit(request, "admin-setup", 5, 60_000);
     assertSameOrigin(request);
     const input = await readJson(request, setupSchema);
 

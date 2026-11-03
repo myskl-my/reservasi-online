@@ -2,18 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import { DatabaseSync } from "node:sqlite";
-import { hash } from "@node-rs/argon2";
+import { hashPin, isPbkdf2Hash } from "./lib/pin-hash.mjs";
 
 const root = process.cwd();
-const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "cutqueue.db");
-
-const ARGON2_OPTIONS = {
-  algorithm: 2,
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-  outputLen: 32,
-};
+const dbPath = process.env.RESERVASI_ONLINE_DB_PATH || path.join(root, "data", "reservasi-online.db");
 
 function fail(message) {
   console.error(`Gagal: ${message}`);
@@ -104,9 +96,9 @@ async function main() {
       fail("PIN harus 6-12 digit angka.");
     }
 
-    const pinHash = await hash(pin, ARGON2_OPTIONS);
-    if (!pinHash.startsWith("$argon2id$")) {
-      fail("hash PIN tidak memakai Argon2id.");
+    const pinHash = await hashPin(pin);
+    if (!isPbkdf2Hash(pinHash)) {
+      fail("hash PIN tidak memakai PBKDF2.");
     }
 
     const now = new Date().toISOString();

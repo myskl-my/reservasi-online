@@ -3,10 +3,19 @@ import { nowIso } from "@/lib/dates";
 import { sha256Hex } from "@/lib/auth/password";
 
 export const MAX_LOGIN_ATTEMPTS = 3;
+// Penguncian global memakai ambang lebih tinggi agar satu pihak yang
+// salah PIN tidak bisa mengunci login seluruh admin (DoS login).
+export const MAX_GLOBAL_LOGIN_ATTEMPTS = 10;
 export const LOGIN_LOCK_MS = 15 * 60 * 1000;
 export const GLOBAL_LOGIN_SCOPE = "global";
 export const LOGIN_LOCKED_MESSAGE =
   "Terlalu banyak percobaan. Silakan coba lagi dalam 15 menit.";
+
+function maxAttemptsFor(scope: string): number {
+  return scope === GLOBAL_LOGIN_SCOPE
+    ? MAX_GLOBAL_LOGIN_ATTEMPTS
+    : MAX_LOGIN_ATTEMPTS;
+}
 
 interface LoginStateRow {
   attempt_count: number;
@@ -90,7 +99,7 @@ export async function reserveLoginAttempt(
 
   // Terjadi hanya saat beberapa permintaan memesan slot terakhir bersamaan.
   // Kunci scope agar sisa permintaan tidak pernah diverifikasi.
-  if (attemptNumber > MAX_LOGIN_ATTEMPTS) {
+  if (attemptNumber > maxAttemptsFor(scope)) {
     await recordLoginFailure(scope);
     const state = await getLoginState(scope);
     return {
@@ -123,7 +132,7 @@ export async function recordLoginFailure(scope: string): Promise<void> {
     lockedUntil,
     nowText,
     scope,
-    MAX_LOGIN_ATTEMPTS,
+    maxAttemptsFor(scope),
     nowText,
   );
 }

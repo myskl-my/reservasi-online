@@ -28,7 +28,8 @@
 		{
 			"binding": "DB",
 			"database_name": "reservasi-online-db",
-			"database_id": "14aae4ed-cc38-4949-8b63-c995a83a25ae"
+			"database_id": "14aae4ed-cc38-4949-8b63-c995a83a25ae",
+			"migrations_dir": "db/migrations"
 		}
 	]
 }

@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { apiRequest, ApiClientError } from "@/lib/client/api";
@@ -83,11 +82,15 @@ export function DateOverrideRow({
             <p className="text-sm font-semibold text-ink">
               {formatDateID(day.date)}
             </p>
-            {day.isToday ? <Badge tone="blue">Hari ini</Badge> : null}
-            {day.overrideQuota !== null ? (
-              <Badge tone="violet">Kuota khusus</Badge>
+            {day.isToday ? (
+              <span className="text-xs font-semibold text-info">Hari ini</span>
             ) : null}
-            {day.dateClosed ? <Badge tone="red">Tutup</Badge> : null}
+            {day.overrideQuota !== null ? (
+              <span className="text-xs font-semibold text-plum">Kuota khusus</span>
+            ) : null}
+            {day.dateClosed ? (
+              <span className="text-xs font-semibold text-danger">Tutup</span>
+            ) : null}
           </div>
           <p className="mt-1 text-xs text-ink-muted">
             {day.booked} reservasi aktif dari kuota {day.quota} · sisa{" "}

@@ -11,5 +11,8 @@ export default defineConfig([
     "build/**",
     "data/**",
     "next-env.d.ts",
+    ".open-next/**",
+    ".wrangler/**",
+    "pages-output/**",
   ]),
 ]);
