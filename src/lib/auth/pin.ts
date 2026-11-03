@@ -1,45 +1,95 @@
-import { hash, verify, type Options } from "@node-rs/argon2";
-
-export const PIN_MIN_LENGTH = 6;
-export const PIN_MAX_LENGTH = 12;
+const PIN_MIN_LENGTH = 6;
+const PIN_MAX_LENGTH = 12;
 export const PIN_PATTERN = new RegExp(`^\\d{${PIN_MIN_LENGTH},${PIN_MAX_LENGTH}}$`);
 
-// Parameter Argon2id sesuai rekomendasi OWASP untuk PIN berentropi rendah:
-// 19 MiB memori, 2 iterasi, 1 lane, salt acak dari pustaka. Pustaka memakai
-// Argon2id sebagai algoritma default dan hal itu diverifikasi di hashPin().
-const ARGON2_OPTIONS: Options = {
-  memoryCost: 19_456,
-  timeCost: 2,
-  parallelism: 1,
-  outputLen: 32,
-};
-
 const ARGON2ID_PREFIX = "$argon2id$";
+const PBKDF2_PREFIX = "$pbkdf2$";
+const PBKDF2_ITERATIONS = 310_000;
 
 export function isValidPinFormat(pin: string): boolean {
   return PIN_PATTERN.test(pin);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function fromBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function pbkdf2Hash(pin: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin) as unknown as BufferSource,
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: salt as unknown as BufferSource, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    key,
+    256,
+  );
+  return `${PBKDF2_PREFIX}${PBKDF2_ITERATIONS}$${toBase64(salt)}$${toBase64(
+    new Uint8Array(bits),
+  )}`;
+}
+
+async function pbkdf2Verify(pin: string, storedHash: string): Promise<boolean> {
+  const parts = storedHash.split("$");
+  // $pbkdf2$iterations$salt$hash
+  if (parts.length !== 5 || parts[1] !== "pbkdf2") return false;
+  const iterations = Number(parts[2]);
+  if (!Number.isFinite(iterations) || iterations <= 0) return false;
+  const salt = fromBase64(parts[3]);
+  const expected = fromBase64(parts[4]);
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin) as unknown as BufferSource,
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: salt as unknown as BufferSource, iterations, hash: "SHA-256" },
+    key,
+    expected.length * 8,
+  );
+  const actual = new Uint8Array(bits);
+
+  if (actual.length !== expected.length) return false;
+  let diff = 0;
+  for (let i = 0; i < actual.length; i += 1) {
+    diff |= actual[i] ^ expected[i];
+  }
+  return diff === 0;
 }
 
 export async function hashPin(pin: string): Promise<string> {
   if (!isValidPinFormat(pin)) {
     throw new Error("Format PIN tidak valid.");
   }
-  const encoded = await hash(pin, ARGON2_OPTIONS);
-  if (!encoded.startsWith(ARGON2ID_PREFIX)) {
-    throw new Error("Hash PIN tidak memakai Argon2id.");
-  }
-  return encoded;
+
+  return pbkdf2Hash(pin);
 }
 
 export async function verifyPin(
   pin: string,
   storedHash: string | null,
 ): Promise<boolean> {
-  if (!storedHash || !storedHash.startsWith(ARGON2ID_PREFIX)) return false;
-  try {
-    return await verify(storedHash, pin);
-  } catch {
-    // Hash rusak atau tidak dikenal tidak boleh dianggap cocok.
-    return false;
+  if (!storedHash) return false;
+
+  if (storedHash.startsWith(PBKDF2_PREFIX)) {
+    return pbkdf2Verify(pin, storedHash);
   }
+
+  return false;
 }
