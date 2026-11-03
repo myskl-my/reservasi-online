@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env.local
+.env*.local
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*-integration.db
+*.log
+*.tsbuildinfo
+data/*backup*

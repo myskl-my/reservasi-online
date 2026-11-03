@@ -1,0 +1,38 @@
+{
+  "name": "reservasi-online",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/db-migrate.mjs && node node_modules/next/dist/bin/next dev",
+    "build": "node node_modules/next/dist/bin/next build",
+    "start": "node node_modules/next/dist/bin/next start",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:reset": "node scripts/db-reset.mjs",
+    "admin:pin": "node scripts/set-admin-pin.mjs",
+    "admin:status": "node scripts/admin-status.mjs",
+    "setup": "node scripts/setup-admin.mjs",
+    "reset:admin": "node scripts/reset-admin.mjs",
+    "reset:pin": "node scripts/reset-admin-pin.mjs",
+    "test:unit": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/unit/*.test.mjs",
+    "test:integration": "node scripts/integration-test.mjs"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
+    "next": "16.4.4",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zod": "4.3.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.4",
+    "tailwindcss": "4.3.3",
+    "typescript": "^5.9.0"
+  }
+}

@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/*
+ * Reservasi online design tokens.
+ * Palet cerah tapi low-contrast, hangat dan menyenangkan.
+ * Semua komponen memakai token ini agar warna, radius, dan bayangan konsisten.
+ */
+@theme {
+  --color-canvas: #faf9f6;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1efe9;
+  --color-ink: #1e1d1b;
+  --color-ink-muted: #6b6862;
+  --color-line: #e8e4dc;
+
+  --color-accent: #4a9c8e;
+  --color-accent-strong: #3a8276;
+  --color-accent-soft: #e6f3f0;
+
+  --color-success: #3db47a;
+  --color-success-soft: #e6f7ed;
+  --color-warning: #e6a53a;
+  --color-warning-soft: #fef3e2;
+  --color-danger: #e86c63;
+  --color-danger-soft: #fdeaea;
+  --color-info: #4aa3cc;
+  --color-info-soft: #e6f2fa;
+  --color-plum: #b36ec7;
+  --color-plum-soft: #f5e9f8;
+
+  --radius-card: 0.875rem;
+  --radius-control: 0.625rem;
+
+  --shadow-card:
+    0 1px 2px rgba(30, 29, 27, 0.04),
+    0 6px 20px -18px rgba(30, 29, 27, 0.25);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background-color: #b8e5dc;
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Navigasi yang dapat digeser tanpa menampilkan scrollbar tebal. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
